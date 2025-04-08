@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LedgerX - 智能记账软件</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 基础样式 */
+        :root {
+            --dark-blue: #0F172A;
+            --purple: #6366F1;
+            --light-purple: #818cf8;
+            --white: #F8FAFC;
+            --light-gray: #e2e8f0;
+            --text-gray: #64748b;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--white);
+            color: var(--dark-blue);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 背景渐变动画 */
+        @keyframes gradientBackground {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        /* 记忆曲线动画 */
+        @keyframes memoryFade {
+            0% {
+                opacity: 0.7;
+                transform: translateY(0);
+            }
+            50% {
+                opacity: 0.9;
+                transform: translateY(-3px);
+            }
+            100% {
+                opacity: 0.7;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes shine {
+            0% {
+                background-position: -100% 0;
+            }
+            100% {
+                background-position: 100% 0;
+            }
+        }
+        
+        /* 容器样式 */
+        .app-container {
+            max-width: 375px;
+            height: 812px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            background-color: var(--white);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 标题栏样式 */
+        .header {
+            background: linear-gradient(135deg, var(--dark-blue), #1e293b);
+            background-size: 200% 200%;
+            animation: gradientBackground 15s ease infinite;
+            color: var(--white);
+            padding: 16px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            position: relative;
+            display: inline-block;
+            overflow: hidden;
+        }
+        
+        .header h1::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 30%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+            background-size: 200% 100%;
+            animation: shine 3s infinite;
+        }
+        
+        .memory-curve {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            display: flex;
+            align-items: flex-end;
+            height: 20px;
+            width: 80px;
+        }
+        
+        .memory-curve-bar {
+            width: 4px;
+            background-color: rgba(255, 255, 255, 0.7);
+            margin-right: 3px;
+            border-radius: 2px 2px 0 0;
+            animation: memoryFade 3s infinite;
+        }
+        
+        .memory-curve-bar:nth-child(1) {
+            height: 18px;
+            animation-delay: 0s;
+        }
+        
+        .memory-curve-bar:nth-child(2) {
+            height: 10px;
+            animation-delay: 0.2s;
+        }
+        
+        .memory-curve-bar:nth-child(3) {
+            height: 14px;
+            animation-delay: 0.4s;
+        }
+        
+        .memory-curve-bar:nth-child(4) {
+            height: 7px;
+            animation-delay: 0.6s;
+        }
+        
+        .memory-curve-bar:nth-child(5) {
+            height: 12px;
+            animation-delay: 0.8s;
+        }
+        
+        .memory-curve-bar:nth-child(6) {
+            height: 5px;
+            animation-delay: 1s;
+        }
+        
+        .memory-curve-bar:nth-child(7) {
+            height: 9px;
+            animation-delay: 1.2s;
+        }
+        
+        .memory-curve-bar:last-child {
+            margin-right: 0;
+        }
+        
+        /* 视图容器 */
+        .views-container {
+            height: calc(100% - 120px);
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .view {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 16px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .view.active {
+            opacity: 1;
+            transform: translateX(0);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* 导航栏样式 */
+        .nav-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 60px;
+            background-color: var(--dark-blue);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-item {
+            color: var(--light-gray);
+            text-align: center;
+            padding: 8px 0;
+            flex: 1;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .nav-item.active {
+            color: var(--purple);
+        }
+        
+        .nav-item i {
+            font-size: 24px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        
+        .nav-item span {
+            font-size: 12px;
+        }
+        
+        /* 登录注册页面样式 */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            height: 100%;
+        }
+        
+        .auth-logo {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .auth-logo h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark-blue);
+            margin-top: 10px;
+        }
+        
+        .auth-logo-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--purple), var(--light-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 40px;
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .auth-logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            animation: pulse 15s infinite linear;
+        }
+        
+        .auth-tabs {
+            display: flex;
+            width: 100%;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 16px;
+            font-weight: 500;
+            color: var(--text-gray);
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .auth-tab.active {
+            color: var(--purple);
+        }
+        
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--purple);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .auth-form {
+            width: 100%;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .auth-form-group {
+            margin-bottom: 20px;
+        }
+        
+        .auth-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--light-gray);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: var(--transition);
+            background-color: white;
+        }
+        
+        .auth-input:focus {
+            border-color: var(--purple);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+        
+        .auth-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--purple), var(--light-purple));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+            margin-top: 10px;
+        }
+        
+        .auth-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+            transition: left 0.5s ease;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(99, 102, 241, 0.3);
+        }
+        
+        .auth-btn:hover::after {
+            left: 100%;
+        }
+        
+        .auth-extra {
+            margin-top: 20px;
+            text-align: center;
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        
+        .auth-link {
+            color: var(--purple);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+        
+        .auth-social {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+        
+        .social-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: white;
+            border: 1px solid var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 20px;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .social-btn.wechat {
+            color: #07C160;
+        }
+        
+        .social-btn.weibo {
+            color: #E6162D;
+        }
+        
+        .social-btn.qq {
+            color: #1DA1F2;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-bottom: 20px;
+        }
+        
+        .remember-me input {
+            margin-right: 8px;
+        }
+        
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: var(--light-gray);
+        }
+        
+        .auth-divider::before {
+            margin-right: 16px;
+        }
+        
+        .auth-divider::after {
+            margin-left: 16px;
+        }
+        
+        /* 用户账户页面样式 */
+        .user-profile {
+            padding: 24px 20px;
+            position: relative;
+            background: linear-gradient(135deg, var(--purple), var(--light-purple));
+            color: white;
+            border-radius: 0 0 24px 24px;
+            margin: -16px -16px 20px -16px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: white;
+            margin-right: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--purple);
+            overflow: hidden;
+        }
+        
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .user-level {
+            font-size: 14px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+        }
+        
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 8px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-right: 8px;
+            font-size: 12px;
+        }
+        
+        .edit-profile {
+            position: absolute;
+            top: 24px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .edit-profile:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .profile-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+        
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            position: relative;
+        }
+        
+        .stat-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 20%;
+            height: 60%;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .account-section {
+            margin-bottom: 24px;
+        }
+        
+        .section-heading {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--dark-blue);
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-heading i {
+            margin-right: 8px;
+            color: var(--purple);
+        }
+        
+        .menu-list {
+            background-color: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--light-gray);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+        
+        .menu-item:hover {
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+        
+        .menu-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background-color: rgba(99, 102, 241, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            color: var(--purple);
+            font-size: 18px;
+        }
+        
+        .menu-text {
+            flex: 1;
+            color: var(--dark-blue);
+            font-weight: 500;
+        }
+        
+        .menu-arrow {
+            color: var(--text-gray);
+            font-size: 14px;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            background-color: #ef4444;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        
+        .badge.green {
+            background-color: #10b981;
+        }
+        
+        .badge.blue {
+            background-color: var(--purple);
+        }
+        
+        .logout-btn {
+            width: 100%;
+            padding: 16px;
+            text-align: center;
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 40px;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(239, 68, 68, 0.15);
+        }
+        
+        /* 卡片样式 */
+        .card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 8px rgba(15, 23, 42, 0.1);
+            transition: var(--transition);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+        }
+        
+        /* 仪表盘视图样式 */
+        .balance-card {
+            background: linear-gradient(135deg, var(--purple), var(--light-purple));
+            color: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+            animation: pulse 15s infinite linear;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .balance-title {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .balance-amount {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .balance-change {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            background-color: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+            margin: 0 4px;
+        }
+        
+        .stat-card:first-child {
+            margin-left: 0;
+        }
+        
+        .stat-card:last-child {
+            margin-right: 0;
+        }
+        
+        .stat-title {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .stat-card.income .stat-value {
+            color: #10b981;
+        }
+        
+        .stat-card.expense .stat-value {
+            color: #ef4444;
+        }
+        
+        .recent-transactions {
+            margin-top: 24px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--dark-blue);
+        }
+        
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--light-gray);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .transaction-item::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(99, 102, 241, 0.05);
+            transition: transform 0.5s ease;
+            z-index: 0;
+        }
+        
+        .transaction-item:hover::after {
+            transform: translateX(100%);
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 12px;
+            color: var(--purple);
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+        
+        .transaction-details {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .transaction-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .transaction-date {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+        
+        .transaction-amount {
+            font-weight: 600;
+        }
+        
+        .transaction-amount.expense {
+            color: #ef4444;
+        }
+        
+        .transaction-amount.income {
+            color: #10b981;
+        }
+        
+        /* 记账系统视图样式 */
+        .add-transaction-btn {
+            position: fixed;
+            bottom: 80px;
+            right: calc(50% - 160px);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--purple);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+            z-index: 10;
+            cursor: pointer;
+            transition: var(--transition);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+        
+        .add-transaction-btn:hover {
+            transform: scale(1.05);
+            background-color: var(--light-purple);
+        }
+        
+        .transaction-form {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark-blue);
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+        
+        .form-input:focus {
+            border-color: var(--purple);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+        
+        .type-selector {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .type-option {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .type-option:first-child {
+            margin-right: 8px;
+        }
+        
+        .type-option.selected {
+            background-color: var(--purple);
+            color: white;
+            border-color: var(--purple);
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background-color: var(--purple);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .submit-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0) 100%);
+            transition: left 0.5s ease;
+        }
+        
+        .submit-btn:hover {
+            background-color: var(--light-purple);
+        }
+        
+        .submit-btn:hover::after {
+            left: 100%;
+        }
+        
+        .category-selector {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        
+        .category-item {
+            width: calc(25% - 8px);
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .category-item.selected {
+            background-color: var(--purple);
+            color: white;
+        }
+        
+        .category-item i {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .category-item span {
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .transactions-filter {
+            display: flex;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+        }
+        
+        .filter-option {
+            white-space: nowrap;
+            padding: 8px 16px;
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--purple);
+            border-radius: 20px;
+            margin-right: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .filter-option.active {
+            background-color: var(--purple);
+            color: white;
+        }
+        
+        /* 交互动画效果 */
+        .transaction-item:hover .transaction-icon {
+            transform: scale(1.1);
+        }
+        
+        .category-item:hover {
+            transform: translateY(-3px);
+        }
+        
+        .budget-item {
+            transition: transform 0.3s ease;
+        }
+        
+        .budget-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .budget-item:hover div[style*="background-color: var(--purple)"] {
+            animation: progressPulse 1s infinite;
+        }
+        
+        @keyframes progressPulse {
+            0% {
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.8;
+            }
+        }
+        
+        .category-list-item {
+            transition: transform 0.3s ease;
+        }
+        
+        .category-list-item:hover {
+            transform: translateX(5px);
+            background-color: rgba(99, 102, 241, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>LedgerX</h1>
+            <div class="memory-curve">
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+                <div class="memory-curve-bar"></div>
+            </div>
+        </div>
+        
+        <div class="views-container">
+            <!-- 财务仪表盘视图 -->
+            <div class="view active" id="dashboard">
+                <div class="balance-card">
+                    <div class="balance-title">总资产</div>
+                    <div class="balance-amount">¥24,563.42</div>
+                    <div class="balance-change">本月 <i class="fas fa-arrow-up"></i> ¥2,145.30 (+9.5%)</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stat-card income">
+                        <div class="stat-title">本月收入</div>
+                        <div class="stat-value">¥8,456</div>
+                    </div>
+                    <div class="stat-card expense">
+                        <div class="stat-title">本月支出</div>
+                        <div class="stat-value">¥6,310</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="section-title">支出分布</div>
+                    <div style="height: 150px; width: 100%; display: flex; justify-content: center; align-items: center; background-color: rgba(99, 102, 241, 0.05); border-radius: 8px;">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" alt="支出分布图表" style="max-width: 100%; max-height: 100%; border-radius: 8px;">
+                    </div>
+                </div>
+                
+                <div class="recent-transactions">
+                    <div class="section-title">最近交易</div>
+                    
+                    <div class="card">
+                        <div class="transaction-item">
+                            <div class="transaction-icon">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-title">午餐</div>
+                                <div class="transaction-date">今天, 12:30</div>
+                            </div>
+                            <div class="transaction-amount expense">-¥45</div>
+                        </div>
+                        
+                        <div class="transaction-item">
+                            <div class="transaction-icon">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-title">购物</div>
+                                <div class="transaction-date">昨天, 16:20</div>
+                            </div>
+                            <div class="transaction-amount expense">-¥128</div>
+                        </div>
+                        
+                        <div class="transaction-item">
+                            <div class="transaction-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-title">工资</div>
+                                <div class="transaction-date">6月1日</div>
+                            </div>
+                            <div class="transaction-amount income">+¥6,500</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 记账系统视图 -->
+            <div class="view" id="ledger">
+                <div class="transactions-filter">
+                    <div class="filter-option active">全部</div>
+                    <div class="filter-option">支出</div>
+                    <div class="filter-option">收入</div>
+                    <div class="filter-option">本周</div>
+                    <div class="filter-option">本月</div>
+                </div>
+                
+                <div class="transaction-form">
+                    <div class="type-selector">
+                        <div class="type-option selected">支出</div>
+                        <div class="type-option">收入</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">金额</label>
+                        <input type="number" class="form-input" placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">分类</label>
+                        <div class="category-selector">
+                            <div class="category-item selected">
+                                <i class="fas fa-utensils"></i>
+                                <span>餐饮</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>购物</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-home"></i>
+                                <span>住房</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-car"></i>
+                                <span>交通</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-gamepad"></i>
+                                <span>娱乐</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-heartbeat"></i>
+                                <span>医疗</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>教育</span>
+                            </div>
+                            <div class="category-item">
+                                <i class="fas fa-ellipsis-h"></i>
+                                <span>其他</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">备注</label>
+                        <input type="text" class="form-input" placeholder="添加备注...">
+                    </div>
+                    
+                    <button class="submit-btn">保存</button>
+                </div>
+                
+                <div class="section-title">历史记录</div>
+                <div class="card">
+                    <div class="transaction-item">
+                        <div class="transaction-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">午餐</div>
+                            <div class="transaction-date">今天, 12:30</div>
+                        </div>
+                        <div class="transaction-amount expense">-¥45</div>
+                    </div>
+                    
+                    <div class="transaction-item">
+                        <div class="transaction-icon">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">购物</div>
+                            <div class="transaction-date">昨天, 16:20</div>
+                        </div>
+                        <div class="transaction-amount expense">-¥128</div>
+                    </div>
+                    
+                    <div class="transaction-item">
+                        <div class="transaction-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-title">工资</div>
+                            <div class="transaction-date">6月1日</div>
+                        </div>
+                        <div class="transaction-amount income">+¥6,500</div>
+                    </div>
+                </div>
+                
+                <div class="add-transaction-btn">
+                    <i class="fas fa-plus"></i>
+                </div>
+            </div>
+            
+            <!-- 财务分析视图 (预留) -->
+            <div class="view" id="analysis">
+                <div class="section-title">财务分析</div>
+                
+                <div class="card">
+                    <div class="section-title" style="margin-top: 0;">月度趋势</div>
+                    <div style="height: 180px; width: 100%; display: flex; justify-content: center; align-items: center; background-color: rgba(99, 102, 241, 0.05); border-radius: 8px; overflow: hidden;">
+                        <img src="https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" alt="财务趋势图" style="max-width: 100%; max-height: 100%; border-radius: 8px;">
+                    </div>
+                    
+                    <div class="trends-tabs" style="display: flex; margin-top: 16px; border-bottom: 1px solid var(--light-gray);">
+                        <div class="trend-tab active" style="padding: 8px 16px; font-size: 14px; cursor: pointer; color: var(--purple); border-bottom: 2px solid var(--purple);">支出</div>
+                        <div class="trend-tab" style="padding: 8px 16px; font-size: 14px; cursor: pointer; color: var(--text-gray);">收入</div>
+                        <div class="trend-tab" style="padding: 8px 16px; font-size: 14px; cursor: pointer; color: var(--text-gray);">净收入</div>
+                    </div>
+                    
+                    <div class="stats-summary" style="display: flex; justify-content: space-between; margin-top: 16px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 12px; color: var(--text-gray);">平均值</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-top: 4px;">¥5,428</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 12px; color: var(--text-gray);">最大值</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-top: 4px;">¥8,954</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 12px; color: var(--text-gray);">最小值</div>
+                            <div style="font-size: 16px; font-weight: 600; margin-top: 4px;">¥3,215</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="section-title" style="margin-top: 0;">支出分类分析</div>
+                    <div style="height: 200px; width: 100%; display: flex; justify-content: center; align-items: center; background-color: rgba(99, 102, 241, 0.05); border-radius: 8px; overflow: hidden;">
+                        <img src="https://images.unsplash.com/photo-1553484771-73408d858ea9?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" alt="分类分析图" style="max-width: 100%; max-height: 100%; border-radius: 8px;">
+                    </div>
+                    
+                    <div class="category-list" style="margin-top: 16px;">
+                        <div class="category-analysis-item" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 36px; height: 36px; background-color: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 12px; color: var(--purple);">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500; margin-bottom: 4px;">餐饮</div>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="flex: 1; height: 6px; background-color: var(--light-gray); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: 35%; height: 100%; background-color: var(--purple); border-radius: 3px;"></div>
+                                    </div>
+                                    <span style="margin-left: 8px; font-size: 14px; color: var(--purple); font-weight: 500;">35%</span>
+                                </div>
+                            </div>
+                            <div style="font-weight: 600; color: #ef4444; margin-left: 12px;">¥2,156</div>
+                        </div>
+                        
+                        <div class="category-analysis-item" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 36px; height: 36px; background-color: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 12px; color: var(--purple);">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500; margin-bottom: 4px;">住房</div>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="flex: 1; height: 6px; background-color: var(--light-gray); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: 28%; height: 100%; background-color: var(--purple); border-radius: 3px;"></div>
+                                    </div>
+                                    <span style="margin-left: 8px; font-size: 14px; color: var(--purple); font-weight: 500;">28%</span>
+                                </div>
+                            </div>
+                            <div style="font-weight: 600; color: #ef4444; margin-left: 12px;">¥1,800</div>
+                        </div>
+                        
+                        <div class="category-analysis-item" style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 36px; height: 36px; background-color: rgba(99, 102, 241, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 12px; color: var(--purple);">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500; margin-bottom: 4px;">购物</div>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="flex: 1; height: 6px; background-color: var(--light-gray); border-radius: 3px; overflow: hidden;">
+                                        <div style="width: 20%; height: 100%; background-color: var(--purple); border-radius: 3px;"></div>
+                                    </div>
+                                    <span style="margin-left: 8px; font-size: 14px; color: var(--purple); font-weight: 500;">20%</span>
+                                </div>
+                            </div>
+                            <div style="font-weight: 600; color: #ef4444; margin-left: 12px;">¥1,254</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="section-title" style="margin-top: 0;">预算执行情况</div>
+                    <div class="budget-progress" style="margin-top: 16px;">
+                        <div class="budget-item" style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <div style="font-weight: 500;">餐饮预算</div>
+                                <div style="font-weight: 500;">
+                                    <span style="color: #ef4444;">¥2,156</span> / <span>¥2,500</span>
+                                </div>
+                            </div>
+                            <div style="height: 8px; background-color: var(--light-gray); border-radius: 4px; overflow: hidden;">
+                                <div style="width: 86%; height: 100%; background-color: var(--purple); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="budget-item" style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <div style="font-weight: 500;">购物预算</div>
+                                <div style="font-weight: 500;">
+                                    <span style="color: #ef4444;">¥1,254</span> / <span>¥1,500</span>
+                                </div>
+                            </div>
+                            <div style="height: 8px; background-color: var(--light-gray); border-radius: 4px; overflow: hidden;">
+                                <div style="width: 83%; height: 100%; background-color: var(--purple); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="budget-item" style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <div style="font-weight: 500;">交通预算</div>
+                                <div style="font-weight: 500;">
+                                    <span style="color: #ef4444;">¥600</span> / <span>¥800</span>
+                                </div>
+                            </div>
+                            <div style="height: 8px; background-color: var(--light-gray); border-radius: 4px; overflow: hidden;">
+                                <div style="width: 75%; height: 100%; background-color: var(--purple); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="height: 80px;"></div> <!-- 底部间距 -->
+            </div>
+            
+            <!-- 登录注册视图 -->
+            <div class="view" id="login">
+                <!-- 登录前显示的内容 -->
+                <div class="auth-container" id="auth-content">
+                    <div class="auth-logo">
+                        <div class="auth-logo-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <h2>LedgerX</h2>
+                    </div>
+                    
+                    <div class="auth-tabs">
+                        <div class="auth-tab active" data-form="login-form">登录</div>
+                        <div class="auth-tab" data-form="register-form">注册</div>
+                    </div>
+                    
+                    <div class="auth-form" id="login-form">
+                        <div class="auth-form-group">
+                            <input type="text" class="auth-input" placeholder="用户名/手机号/邮箱" id="login-username">
+                        </div>
+                        <div class="auth-form-group">
+                            <input type="password" class="auth-input" placeholder="密码" id="login-password">
+                        </div>
+                        <div class="remember-me">
+                            <input type="checkbox" id="remember">
+                            <label for="remember">记住我</label>
+                        </div>
+                        <button class="auth-btn" id="login-btn">登录</button>
+                        <div class="auth-extra">
+                            <a class="auth-link">忘记密码?</a>
+                        </div>
+                        
+                        <div class="auth-divider">或使用其他方式登录</div>
+                        
+                        <div class="auth-social">
+                            <div class="social-btn wechat">
+                                <i class="fab fa-weixin"></i>
+                            </div>
+                            <div class="social-btn weibo">
+                                <i class="fab fa-weibo"></i>
+                            </div>
+                            <div class="social-btn qq">
+                                <i class="fab fa-qq"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-form" id="register-form" style="display: none;">
+                        <div class="auth-form-group">
+                            <input type="text" class="auth-input" placeholder="用户名">
+                        </div>
+                        <div class="auth-form-group">
+                            <input type="tel" class="auth-input" placeholder="手机号">
+                        </div>
+                        <div class="auth-form-group">
+                            <input type="password" class="auth-input" placeholder="设置密码">
+                        </div>
+                        <div class="auth-form-group">
+                            <input type="password" class="auth-input" placeholder="确认密码">
+                        </div>
+                        <button class="auth-btn">注册</button>
+                        <div class="auth-extra">
+                            注册即表示同意 <a class="auth-link">用户协议</a> 和 <a class="auth-link">隐私政策</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 登录后显示的用户账户页面 -->
+                <div id="user-account" style="display: none;">
+                    <div class="user-profile">
+                        <div class="edit-profile">
+                            <i class="fas fa-pencil-alt"></i>
+                        </div>
+                        
+                        <div class="profile-header">
+                            <div class="avatar">
+                                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=120&q=80" alt="用户头像">
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name">张小明</div>
+                                <div class="user-level">
+                                    <span class="level-badge">Lv.8</span>
+                                    <span>记账达人</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">36</div>
+                                <div class="stat-label">记账天数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">142</div>
+                                <div class="stat-label">记账笔数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">预算达成</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="account-section">
+                        <div class="section-heading">
+                            <i class="fas fa-bell"></i>
+                            通知与提醒
+                        </div>
+                        <div class="menu-list">
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="menu-text">消息中心</div>
+                                <span class="badge">2</span>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-bullhorn"></i>
+                                </div>
+                                <div class="menu-text">系统公告</div>
+                                <span class="badge blue">新</span>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="account-section">
+                        <div class="section-heading">
+                            <i class="fas fa-cog"></i>
+                            账户与安全
+                        </div>
+                        <div class="menu-list">
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="menu-text">个人资料</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <div class="menu-text">账户安全</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="menu-text">支付管理</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="account-section">
+                        <div class="section-heading">
+                            <i class="fas fa-star"></i>
+                            增值服务
+                        </div>
+                        <div class="menu-list">
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-crown" style="color: #F59E0B;"></i>
+                                </div>
+                                <div class="menu-text">会员特权</div>
+                                <span class="badge green">优惠</span>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="menu-text">云空间</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-sync"></i>
+                                </div>
+                                <div class="menu-text">数据恢复</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="account-section">
+                        <div class="section-heading">
+                            <i class="fas fa-question-circle"></i>
+                            帮助与支持
+                        </div>
+                        <div class="menu-list">
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="menu-text">使用指南</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-headset"></i>
+                                </div>
+                                <div class="menu-text">联系客服</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">
+                                    <i class="fas fa-comment-dots"></i>
+                                </div>
+                                <div class="menu-text">意见反馈</div>
+                                <div class="menu-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button class="logout-btn" id="logout-btn">
+                        退出登录
+                    </button>
+                    
+                    <div style="height: 80px;"></div> <!-- 底部间距 -->
+                </div>
+            </div>
+            
+            <!-- 分类管理视图 (预留) -->
+            <div class="view" id="categories">
+                <div class="section-title">分类管理</div>
+                
+                <div class="type-selector" style="margin-bottom: 24px;">
+                    <div class="type-option selected">支出分类</div>
+                    <div class="type-option">收入分类</div>
+                </div>
+                
+                <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>所有分类</span>
+                    <button class="add-category-btn" style="background-color: var(--purple); color: white; border: none; border-radius: 6px; padding: 8px 16px; font-size: 14px; cursor: pointer;">添加</button>
+                </div>
+                
+                <div class="categories-list">
+                    <div class="card" style="padding: 0; overflow: hidden;">
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">餐饮</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">3笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">购物</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">5笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">住房</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">1笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-car"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">交通</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">2笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-gamepad"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">娱乐</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">4笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px; border-bottom: 1px solid var(--light-gray);">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">医疗</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">1笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="category-list-item" style="display: flex; align-items: center; padding: 16px;">
+                            <div style="width: 40px; height: 40px; background-color: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; justify-content: center; align-items: center; margin-right: 16px; color: var(--purple);">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 500;">教育</div>
+                                <div style="font-size: 12px; color: var(--text-gray); margin-top: 4px;">0笔支出 / 本月</div>
+                            </div>
+                            <div style="color: var(--text-gray);">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="height: 80px;"></div> <!-- 底部间距 -->
+            </div>
+        </div>
+        
+        <div class="nav-bar">
+            <div class="nav-item active" data-view="dashboard">
+                <i class="fas fa-chart-pie"></i>
+                <span>仪表盘</span>
+            </div>
+            <div class="nav-item" data-view="ledger">
+                <i class="fas fa-list"></i>
+                <span>记账</span>
+            </div>
+            <div class="nav-item" data-view="analysis">
+                <i class="fas fa-chart-line"></i>
+                <span>分析</span>
+            </div>
+            <div class="nav-item" data-view="categories">
+                <i class="fas fa-tags"></i>
+                <span>分类</span>
+            </div>
+            <div class="nav-item" data-view="login">
+                <i class="fas fa-user"></i>
+                <span>我的</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 视图切换功能
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // 更新导航项状态
+                document.querySelectorAll('.nav-item').forEach(navItem => {
+                    navItem.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // 获取目标视图ID
+                const viewId = this.getAttribute('data-view');
+                
+                // 更新视图状态
+                document.querySelectorAll('.view').forEach(view => {
+                    view.classList.remove('active');
+                });
+                document.getElementById(viewId).classList.add('active');
+            });
+        });
+        
+        // 交易类型选择器
+        document.querySelectorAll('.type-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.type-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+        
+        // 类别选择器
+        document.querySelectorAll('.category-item').forEach(category => {
+            category.addEventListener('click', function() {
+                document.querySelectorAll('.category-item').forEach(cat => {
+                    cat.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+        
+        // 筛选选项
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+        
+        // 趋势标签切换功能
+        document.querySelectorAll('.trend-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.trend-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.style.color = 'var(--text-gray)';
+                    t.style.borderBottom = 'none';
+                });
+                this.classList.add('active');
+                this.style.color = 'var(--purple)';
+                this.style.borderBottom = '2px solid var(--purple)';
+            });
+        });
+        
+        // 登录注册页面标签切换
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 更新标签状态
+                document.querySelectorAll('.auth-tab').forEach(t => {
+                    t.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // 获取目标表单ID
+                const formId = this.getAttribute('data-form');
+                
+                // 切换表单显示
+                document.querySelectorAll('.auth-form').forEach(form => {
+                    form.style.display = 'none';
+                });
+                document.getElementById(formId).style.display = 'block';
+            });
+        });
+        
+        // 登录登出功能
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const authContent = document.getElementById('auth-content');
+        const userAccount = document.getElementById('user-account');
+        
+        // 登录按钮点击事件
+        loginBtn.addEventListener('click', function() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            // 这里是模拟登录，实际项目中应该有真正的登录验证
+            if (username && password) {
+                // 切换显示用户账户页面
+                authContent.style.display = 'none';
+                userAccount.style.display = 'block';
+                
+                // 显示登录成功提示
+                alert('登录成功！');
+            } else {
+                alert('请输入用户名和密码');
+            }
+        });
+        
+        // 登出按钮点击事件
+        logoutBtn.addEventListener('click', function() {
+            // 切换回登录页面
+            authContent.style.display = 'flex';
+            userAccount.style.display = 'none';
+            
+            // 清空登录表单
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            
+            // 显示登出成功提示
+            alert('您已退出登录');
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,290 @@
+:root {
+  --dark-blue: #0F172A;
+  --purple: #6366F1;
+  --light-purple: #818cf8;
+  --white: #F8FAFC;
+  --light-gray: #e2e8f0;
+  --text-gray: #64748b;
+  --transition: all 0.3s ease;
+  --gradient-start: #4F46E5;
+  --gradient-end: #7C3AED;
+  --nav-bg: #F1F5F9;
+  --nav-text: #64748b;
+  --nav-active: #6366F1;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* 全局隐藏滚动条，但保留滚动功能 */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
+  display: none;
+}
+
+body {
+  background-color: var(--white);
+  color: var(--dark-blue);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 动画样式 */
+@keyframes gradientBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes memoryFade {
+  0% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shine {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+/* 应用容器样式 */
+.app-container {
+  width: 100%;
+  max-width: 100%;
+  height: 100vh;
+  margin: 0;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: var(--white);
+  box-shadow: none;
+}
+
+/* 标题栏样式 */
+.header {
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  background-size: 200% 200%;
+  animation: gradientBackground 15s ease infinite;
+  color: var(--white);
+  padding: 12px 16px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h1 {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.header h1::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+  background-size: 200% 100%;
+  animation: shine 3s infinite;
+}
+
+.memory-curve {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  align-items: flex-end;
+  height: 20px;
+  width: 80px;
+}
+
+.memory-curve-bar {
+  width: 4px;
+  background-color: rgba(255, 255, 255, 0.7);
+  margin-right: 3px;
+  border-radius: 2px 2px 0 0;
+  animation: memoryFade 3s infinite;
+}
+
+.memory-curve-bar:nth-child(1) {
+  height: 18px;
+  animation-delay: 0s;
+}
+
+.memory-curve-bar:nth-child(2) {
+  height: 10px;
+  animation-delay: 0.2s;
+}
+
+.memory-curve-bar:nth-child(3) {
+  height: 14px;
+  animation-delay: 0.4s;
+}
+
+.memory-curve-bar:nth-child(4) {
+  height: 7px;
+  animation-delay: 0.6s;
+}
+
+.memory-curve-bar:nth-child(5) {
+  height: 12px;
+  animation-delay: 0.8s;
+}
+
+.memory-curve-bar:nth-child(6) {
+  height: 5px;
+  animation-delay: 1s;
+}
+
+.memory-curve-bar:nth-child(7) {
+  height: 9px;
+  animation-delay: 1.2s;
+}
+
+.memory-curve-bar:last-child {
+  margin-right: 0;
+}
+
+/* 视图容器 */
+.views-container {
+  min-height: calc(100% - 110px);
+  position: relative;
+  padding-bottom: 60px;
+}
+
+/* 导航栏样式 */
+.nav-bar {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 56px;
+  background-color: var(--nav-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -1px 6px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+}
+
+.nav-item {
+  color: var(--nav-text);
+  text-align: center;
+  padding: 8px 0;
+  flex: 1;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+}
+
+.nav-item.active {
+  color: var(--nav-active);
+}
+
+.nav-item i {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.nav-item span {
+  font-size: 12px;
+}
+
+/* 卡片样式 */
+.card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  transition: var(--transition);
+  animation: fadeIn 0.5s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+}
+
+/* 记账按钮 */
+.add-transaction-btn {
+  position: fixed;
+  bottom: 80px;
+  right: calc(50% - 160px);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: var(--purple);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+  z-index: 99;
+  cursor: pointer;
+  transition: var(--transition);
+  animation: pulse 2s infinite;
+}
+
+.add-transaction-btn:hover {
+  transform: scale(1.05);
+  background-color: var(--light-purple);
+}
