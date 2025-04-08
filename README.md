@@ -15,19 +15,19 @@ LedgerX 是一款基于 Vue 3 + Vite + Element Plus 开发的现代化记账应�
 ## 运行实例
 
 ### 仪表盘
-![LedgerX](./public/images/dashboard.png)
+![LedgerX](./frontend/public/images/dashboard.png)
 
 ### 记账
-![LedgerX](./public/images/ledger.png)
+![LedgerX](./frontend/public/images/ledger.png)
 
 ### 分析
-![LedgerX](./public/images/analysis.png)
+![LedgerX](./frontend/public/images/analysis.png)
 
 ### 分类
-![LedgerX](./public/images/category.png)
+![LedgerX](./frontend/public/images/category.png)
 
 ### 我的
-![LedgerX](./public/images/user.png)
+![LedgerX](./frontend/public/images/user.png)
 
 ## 主要功能
 
